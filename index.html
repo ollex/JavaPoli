@@ -29,6 +29,7 @@ var Javapoli = (function(){
 var q = {},
 	currentCallback = "initPlayerNum",
 	can_move = true,
+	oldT = 10000,
 	game = {};
 	game.fields = [
 		{name: "Start field", price: 4000, callback: "_streetFieldLanding", player: null, rent: {plain: 10000, a1: 50000, a2: 100000, a3: 500000, a4: 1000000, h: 5000000}, status: "plain"},
@@ -256,12 +257,14 @@ var q = {},
 		}		
 	},
 	q.scrollIt = function(){
-		var self = this,
-			el = document.getElementById('gametext');
-		if (el.scrollTop != (el.scrollHeight - el.offsetHeight)) {
-			el.scrollTop += 1;
-			setTimeout(Javapoli.scrollIt, 15);			
-		}
+		var el = document.getElementById('gametext');
+		var curT = new Date().getTime();
+		var d = curT - oldT;
+			if (el.scrollTop != (el.scrollHeight - el.offsetHeight)) {
+				el.scrollTop += d / 5;
+				oldT = curT;
+				setTimeout(Javapoli.scrollIt, 10);			
+			}		
 	},
 	q.updateHtml = function(text) {
 		game.html += text;
