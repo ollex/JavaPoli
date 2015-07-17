@@ -183,10 +183,13 @@ var q = {},
 	},
 	q.wantMore = function(input) {
 		currentCallback = "parseCommand";
-		if(input != "y" && input != "yes") {
+		if(input == "n" || input == "no") {
 			can_move = true;
 			this.nextPlayer();
 			this.updateHtml("<li>OK - " + game.players[game.currentPlayer].name + " is now playing his next step!'</li>");
+		} else if(this.is_allowed(input.split(":")[0])) {
+			can_move = false;
+			this.parseCommand(input);
 		} else {
 			can_move = false;	
 			this.updateHtml("<li>OK, waiting for your next command!</li>");
@@ -252,11 +255,19 @@ var q = {},
 			this[currentCallback](input);
 		}		
 	},
+	q.scrollIt = function(){
+		var self = this,
+			el = document.getElementById('gametext');
+		if (el.scrollTop != (el.scrollHeight - el.offsetHeight)) {
+			el.scrollTop += 1;
+			setTimeout(Javapoli.scrollIt, 15);			
+		}
+	},
 	q.updateHtml = function(text) {
 		game.html += text;
 		var el = document.getElementById("gametext");
 		el.innerHTML = game.html;
-		el.scrollTop = el.scrollHeight;		
+		this.scrollIt();	
 	};
 return q;
 })();
