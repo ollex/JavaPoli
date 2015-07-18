@@ -131,13 +131,13 @@ var q = {},
 				game.fields[street].player = buyer;
 				if (this.checkMoney(buyer)) {
 					this.updateHtml("<li>Sold! "+game.players[buyer].name+" has €"+game.players[buyer].money+" left"
-					+" and "+game.players[game.currentPlayer].name+" has €"+game.players[game.currentPlayer].money+" left.</li>")
-					
+					+" and "+game.players[game.currentPlayer].name+" has €"+game.players[game.currentPlayer].money+" left.</li>");
+					this.checkIfMore();
 				}
 			} else {
 				this.updateHtml("<li>OK - not sold.</li>");
-			}		
-			this.checkIfMore();
+				this.checkIfMore();
+			}					
 		 }
 	},
 	q.getStreetIndexFromName = function(name) {
