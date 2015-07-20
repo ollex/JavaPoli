@@ -28,12 +28,55 @@ your command:
 <input type="text" id="cmd" style="width: 400px; color: green; font-family: 'Lucida Console', Monaco, monospace; background-color: #000000; border:none;">
 </div>
 <script type="text/javascript">
+
 var Javapoli = (function(){
 var q = {},
 	currentCallback = "initPlayerNum",
 	can_move = true,
+	stepped = false,
 	oldT = 10000,
 	game = {};
+var JavapoliStreet = function(game) {
+	this.game = game; // OK - later on we should have some kind of check going on if we really get a game delivered
+};
+JavapoliStreet.prototype.getName = function() {
+	return this.name;
+}
+JavapoliStreet.prototype.setName = function(name) {
+	if(name) {
+		this.name = name;
+		return true;
+	}	
+	return false;
+};
+JavapoliStreet.getPrice = function() {
+	return this.price;
+};
+JavapoliStreet.setPrice = function(price) {
+	if(price) {
+		if(!isNaN(price)) {
+			this.price = price;
+			return true;
+		}
+	}
+	return false;
+};
+JavapoliStreet.getCallback = function() {
+	return this.callback;
+};	
+JavapoliStreet.setCallback = function(callback) {
+	if(callback && this.isAllowedCallback(callback)) {
+		this.callback = callback;
+		return true;
+	}
+	return false;
+};
+JavapoliStreet.isAllowedCallback = function(callback) {
+	if(this.game.allowed_funcs.indexOf(callback) !== -1) {
+		return true;
+	} 
+	return false;
+};
 	game.fields = [
 		{name: "Start field", price: 4000, callback: "_streetFieldLanding", player: null, credit: 8000, rent: {plain: 10000, a1: 50000, a2: 100000, a3: 500000, a4: 1000000, h: 5000000}, status: "plain", group: null, group_factor: 2},
 		{name: "Donau Street", price: 4000, callback: "_streetFieldLanding", player: null, credit: 8000, rent: {plain: 10000, a1: 50000, a2: 100000, a3: 500000, a4: 1000000, h: 5000000}, status: "plain", group: 1, group_factor: 2},
@@ -53,7 +96,7 @@ var q = {},
 	game.players = [],
 	game.dmoney = 150000,
 	game.currentPlayer = 0,
-	allowed_funcs = ["step", "go", "exit", "buy", "sell", "money", "streets", "credit", "commands"],
+	game.allowed_funcs = ["step", "go", "exit", "buy", "sell", "money", "streets", "credit", "commands"],
 	game.funcDesc = {
 		step: 		"step lets you roll the dice and advance the respecive street fields.",
 		go:			"go is an alias for step.",
@@ -212,7 +255,7 @@ var q = {},
 	q.step = function(){
 		if(can_move) {
 			var eyes = this.rollDice();
-			console.log("Current Player:" + game.currentPlayer);
+			stepped = true;
 			this.updateHtml("<li> player "+ game.players[game.currentPlayer].name + " advances " + eyes + " fields</li>");
 			var pos = game.players[game.currentPlayer].position + eyes;
 			if (pos > game.fields.length - 1){
@@ -338,7 +381,7 @@ var q = {},
 		
 	},
 	q.checkIfMore = function() {
-		can_move = false;
+		if(stepped) can_move = false;
 		this.updateHtml("<li>Do you want to take more actions?</li>");
 		currentCallback = "wantMore";
 	},
@@ -359,15 +402,21 @@ var q = {},
 	q.wantMore = function(input) {
 		currentCallback = "parseCommand";
 		if(input == "n" || input == "no") {
+			stepped = false;
 			this.nextPlayer();
 			can_move = true;
 			this.updateHtml("<li>OK - " + game.players[game.currentPlayer].name + " is now playing his next step!'</li>");
 		} else if(this.is_allowed(input.split(":")[0])) {
-			can_move = false; // this is a double and can be removed if always using checkIfMore
+			if(stepped) can_move = false;
 			this.parseCommand(input);
 		} else {
-			can_move = false;	// this is a double and can be removed if always using checkIfMore
-			this.updateHtml("<li>OK, waiting for your next command!</li>");
+			if(stepped) can_move = false, cmd = input.split(":")[0];
+			if(cmd == "y" || cmd == "yes" ) {
+				this.updateHtml("<li>OK, waiting for your next command!</li>");
+			}
+			 else {
+				this.updateHtml("<li>Hm - treating this "+cmd+" as a yes, waiting for your next command!</li>");
+			 }
 		}
 	},
 	q.checkMoney = function() {
@@ -397,7 +446,7 @@ var q = {},
 		
 	},
 	q.is_allowed = function(cmd) {
-		if(allowed_funcs.indexOf(cmd) !== -1) {
+		if(game.allowed_funcs.indexOf(cmd) !== -1) {
 			return true;
 		} 
 		return false;
@@ -433,6 +482,7 @@ var q = {},
 			this.focus();
 		});
 		document.getElementById('cmd').focus();
+		var s = new JavapoliStreet(game);
 	},
 	q._parseInput = function(input) {
 		// mach was mit dem Input
@@ -453,7 +503,8 @@ var q = {},
 				el.scrollTop += 1;
 				el.scrollTop += Math.floor( dhd / 20 );
 				oldT = curT;
-				setTimeout(function() { self.scrollIt(); }, 10 - (d < 10 ? d : 0));			
+				setTimeout(function() { self.scrollIt(); }, 10 - (d < 10 ? d : 0));
+//maybe a setInterval / clearInterval can do the trick with less overhead?				
 			}		
 	},
 	q.updateHtml = function(text) {
