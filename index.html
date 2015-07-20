@@ -443,14 +443,17 @@ var q = {},
 		}		
 	},
 	q.scrollIt = function(){
+		var self = this;
 		var el = document.getElementById('gametext');
 		var curT = new Date().getTime();
 		var d = curT - oldT;
-		var hd = el.scrollHeight - el.offsetHeight;
-			if (el.scrollTop < hd) {
-				el.scrollTop += d < 15 ? Math.floor(d * 0.5) : 1;
+		var hd = el.scrollHeight - el.offsetHeight, 
+		dhd = hd - el.scrollTop; 
+			if (dhd > 0) {
+				el.scrollTop += 1;
+				el.scrollTop += dhd > 150 ? 10 : 0;
 				oldT = curT;
-				setTimeout(Javapoli.scrollIt, 10);			
+				setTimeout(function() { self.scrollIt(); }, 10 - (d < 10 ? d : 0));			
 			}		
 	},
 	q.updateHtml = function(text) {
