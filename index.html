@@ -423,7 +423,7 @@ var q = {},
 	},
 	q.init = function() {
 	var self = this;
-		this.updateHtml( "<li>Welcome to Javapoli!</li><li>How many of you are there?</li>" );
+		this.updateHtml( "<li>Welcome to Javapoli!<br/>If you get stuck type 'commands' without quotation marks to get instructions.</li><li>How many of you are there?</li>" );
 		document.getElementById("body").addEventListener("keypress", function(ev){
 			if (ev.keyCode === 13)
 			self._parseInput(document.getElementById("cmd").value);
@@ -447,7 +447,7 @@ var q = {},
 		var curT = new Date().getTime();
 		var d = curT - oldT;
 		var hd = el.scrollHeight - el.offsetHeight;
-			if (el.scrollTop != hd) {
+			if (el.scrollTop < hd) {
 				el.scrollTop += d < 15 ? Math.floor(d * 0.5) : 1;
 				oldT = curT;
 				setTimeout(Javapoli.scrollIt, 10);			
