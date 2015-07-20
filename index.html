@@ -451,7 +451,7 @@ var q = {},
 		dhd = hd - el.scrollTop; 
 			if (dhd > 0) {
 				el.scrollTop += 1;
-				el.scrollTop += dhd > 150 ? 10 : 0;
+				el.scrollTop += Math.floor( dhd / 20 );
 				oldT = curT;
 				setTimeout(function() { self.scrollIt(); }, 10 - (d < 10 ? d : 0));			
 			}		
