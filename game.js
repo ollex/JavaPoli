@@ -399,7 +399,7 @@ var	self = this,
 	var self = this, j = JavapoliImportedStreets;
 	for(var i = 0; i< j.length; i++) {
 		// here next step is to add name of Street Object, parse it and add it "by name", so Streets are completely fexible
-		this.fields.push(new this.streetDefs.JavapoliStreet(self, j[i]));
+		this.fields.push(new this.streetDefs[j[i].type](self, j[i]));
 	}
 		this.updateHtml( "<li>Welcome to Javapoli!<br/>If you get stuck type 'commands' without quotation marks to get instructions.</li><li>How many of you are there?</li>" );
 		document.getElementById("body").addEventListener("keypress", function(ev){
