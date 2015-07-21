@@ -21,7 +21,7 @@ var	self = this,
 	Javapoli.allowed_funcs.push("streets");
 	Javapoli.allowed_funcs.push("credit");
 	Javapoli.allowed_funcs.push("commands");
-	Javapoli.funcDesc = {
+	Javapoli.funcDesc = Javapoli.funcDesc || {
 		step: 		"step lets you roll the dice and advance the respecive street fields.",
 		go:			"go is an alias for step.",
 		exit: 		"exit starts a new Javapoli",
@@ -31,10 +31,9 @@ var	self = this,
 		streets:	"streets:own  lets you see street posessions of each player (no : plus parameter) or your own (: plus own)",
 		credit:		"credit:street lets you turn the chosen street into money. You cannot get paid for landings on this street though while credited."
 	},
-	Javapoli.isAllowedStreetCallback = function() {
+	Javapoli.isAllowedStreetCallback = Javapoli.isAllowedStreetCallback || function() {
 		return true;
 	};
-
 	Javapoli.initPlayerNum = function(input) {
 		if(	isNaN(parseInt(input)) ) {
 			return this.updateHtml( "<li>"+input + "</li><li>Please type an integer number...!</li>" );
@@ -399,10 +398,9 @@ var	self = this,
 	Javapoli.init = function() {
 	var self = this, j = JavapoliImportedStreets;
 	for(var i = 0; i< j.length; i++) {
-		this.fields.push(new JavapoliStreet(self, j[i]));
-		//this.Javapoli.fields.push(new JavapoliStreet(self.Javapoli, j[i].name, j[i].price, j[i].callback, j[i].player, j[i].credit, j[i].rent, j[i].status, j[i].group, j[i].group_factor));
+		// here next step is to add name of Street Object, parse it and add it "by name", so Streets are completely fexible
+		this.fields.push(new this.streetDefs.JavapoliStreet(self, j[i]));
 	}
-	//this.Javapoli.fields = JavapoliImportedStreets;
 		this.updateHtml( "<li>Welcome to Javapoli!<br/>If you get stuck type 'commands' without quotation marks to get instructions.</li><li>How many of you are there?</li>" );
 		document.getElementById("body").addEventListener("keypress", function(ev){
 			if (ev.keyCode === 13)
