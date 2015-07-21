@@ -45,8 +45,8 @@ var	self = this,
 		return this.updateHtml( input + "<li>Please add the Player Names ("+input+" names), comma-separated.</li>" );
 	},
 	Javapoli.commands = function() {
-		for (var key in this.Javapoli.funcDesc) {
-			this.updateHtml("<li>"+this.Javapoli.funcDesc[key]+"</li>");
+		for (var key in this.funcDesc) {
+			this.updateHtml("<li>"+this.funcDesc[key]+"</li>");
 		}
 		this.checkIfMore();
 	},
@@ -184,7 +184,7 @@ var	self = this,
 			var eyes = this.rollDice();
 			stepped = true;
 			this.updateHtml("<li> player "+ this.players[this.currentPlayer].name + " advances " + eyes + " fields</li>");
-			var pos = this.players[this.currentPlayer].position + eyes;
+			var pos = parseInt(this.players[this.currentPlayer].position) + eyes;
 			if (pos > this.fields.length - 1){
 				pos = pos - this.fields.length;		
 				if (pos > 0) {
@@ -396,7 +396,7 @@ var	self = this,
 			}	
 	},
 	Javapoli.init = function() {
-	var self = this, j = JavapoliImportedStreets;
+	var self = this, j = this.importedStreets;
 	for(var i = 0; i< j.length; i++) {
 		// here next step is to add name of Street Object, parse it and add it "by name", so Streets are completely fexible
 		this.fields.push(new this.streetDefs[j[i].type](self, j[i]));
