@@ -181,12 +181,15 @@ var	self = this,
 	},
 	Javapoli.step = function(){
 		if(can_move) {
-			var eyes = this.rollDice();
-			stepped = true;
+			var eyes = this.rollDice(),
+			stepped = true,
+			num_fields = this.streetNum;
+			console.log(num_fields);
 			this.updateHtml("<li> player "+ this.players[this.currentPlayer].name + " advances " + eyes + " fields</li>");
 			var pos = parseInt(this.players[this.currentPlayer].position) + eyes;
-			if (pos > this.fields.length - 1){
-				pos = pos - this.fields.length;		
+			console.log(pos);
+			if (pos > num_fields - 1){
+				pos = pos - num_fields;		
 				if (pos > 0) {
 					this.players[this.currentPlayer].money += 2000000;
 					this.updateHtml("<li>you just earned 2000000 € due to passing the start field.</li>")
@@ -196,7 +199,7 @@ var	self = this,
 				this.players[this.currentPlayer].money += 4000000;
 				this.updateHtml("<li>you just earned 4000000 € due to landing on the start field.</li>")
 			}
-			this.updateHtml("<li> he lands on "+this.fields[pos].getName());
+			this.updateHtml("<li> he lands on "+Javapoli.fields[pos].getName());
 			this.players[this.currentPlayer].position = pos;
 			var callback = this.fields[pos].getCallback();
 			this[callback]();
@@ -396,11 +399,17 @@ var	self = this,
 			}	
 	},
 	Javapoli.init = function() {
-	var self = this, j = this.importedStreets;
+	var self = this, j = this.importedStreets, numstr = 0;
 	for(var i = 0; i< j.length; i++) {
-		// here next step is to add name of Street Object, parse it and add it "by name", so Streets are completely fexible
+		numstr ++;
+		// get fields from streedDefs which are functions.
+		// get name from importedStreets (which is "the game plan") from type attribute of each street
+		// and push into fields array of the game. 
+		// Important: importedStreets need type exactly like your class name, example see javapolistreet.js and streets.js
 		this.fields.push(new this.streetDefs[j[i].type](self, j[i]));
 	}
+	this.streetNum = numstr;
+	console.log("Have " + numstr + " fields.");
 		this.updateHtml( "<li>Welcome to Javapoli!<br/>If you get stuck type 'commands' without quotation marks to get instructions.</li><li>How many of you are there?</li>" );
 		document.getElementById("body").addEventListener("keypress", function(ev){
 			if (ev.keyCode === 13)
