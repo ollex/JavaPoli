@@ -4,8 +4,21 @@ var	self = this,
 	currentCallback = "initPlayerNum",
 	can_move = true,
 	stepped = false,
+	rotating = true,
+	streetNum = 0,
+	is_double = false,
+	actual_num = 0;
+	Javapoli.playercols = [
+		"#FF0000",
+		"#0000CC",
+		"#006600",
+		"#00CC00",
+		"#CCFF00",
+		"#3300FF",
+		"#99FFFF",
+		"#333333",
+	],
 	oldT = 10000;
-	//q.Javapoli = {},
 	Javapoli.fields = Javapoli.fields || [];
 	Javapoli.html = "";
 	Javapoli.players = Javapoli.players || [],
@@ -33,7 +46,7 @@ var	self = this,
 	},
 	Javapoli.isAllowedStreetCallback = Javapoli.isAllowedStreetCallback || function() {
 		return true;
-	};
+	},
 	Javapoli.initPlayerNum = function(input) {
 		if(	isNaN(parseInt(input)) ) {
 			return this.updateHtml( "<li>"+input + "</li><li>Please type an integer number...!</li>" );
@@ -176,6 +189,7 @@ var	self = this,
 				this.setPlayerName(i, sep_names[i]);
 			}
 			currentCallback = "parseCommand";
+			rotating = false;
 			this.step();
 		}
 	},
@@ -183,13 +197,12 @@ var	self = this,
 		if(can_move) {
 			var eyes = this.rollDice(),
 			stepped = true,
-			num_fields = this.streetNum;
-			console.log(num_fields);
+			num_fields = streetNum;
 			this.updateHtml("<li> player "+ this.players[this.currentPlayer].name + " advances " + eyes + " fields</li>");
-			var pos = parseInt(this.players[this.currentPlayer].position) + eyes;
-			console.log(pos);
+			var old_pos = parseInt(this.players[this.currentPlayer].position);
+			var pos = old_pos + eyes;
 			if (pos > num_fields - 1){
-				pos = pos - num_fields;		
+				pos = pos - num_fields;				
 				if (pos > 0) {
 					this.players[this.currentPlayer].money += 2000000;
 					this.updateHtml("<li>you just earned 2000000 € due to passing the start field.</li>")
@@ -199,8 +212,9 @@ var	self = this,
 				this.players[this.currentPlayer].money += 4000000;
 				this.updateHtml("<li>you just earned 4000000 € due to landing on the start field.</li>")
 			}
-			this.updateHtml("<li> he lands on "+Javapoli.fields[pos].getName());
+			this.updateHtml("<li> he lands on "+this.fields[pos].getName());
 			this.players[this.currentPlayer].position = pos;
+			this.updateDots();
 			var callback = this.fields[pos].getCallback();
 			this[callback]();
 		} else {
@@ -210,6 +224,47 @@ var	self = this,
 	},
 	Javapoli.addPlayer = function() {
 		this.players.push({ name: "default", money: this.dmoney, position: 0 });
+	},
+	Javapoli.getPlayerPositions = function() {
+		var pa = [];
+		for(var i = 0; i < this.players.length; i++) {
+			pa.push(this.players[i].position);
+		}
+		return pa;
+	},
+	Javapoli.getPlayersOnField = function(id) {
+		var pa = [];
+		for(var i = 0; i < this.players.length; i++) {
+			if(this.players[i].position == id) {
+				pa.push(this.players[i].name);
+			}
+		}
+		return pa;
+	},
+	Javapoli.updateDots = function() {
+		var pa = this.getPlayerPositions();
+		var pa1 = [];
+		var l = pa.length;
+		for (var i = 0; i < streetNum; i++) {
+			var el = document.getElementById("d_"+i);
+			pa1.length = 0;
+				for(var k = 0; k < l; k++) {
+						if(pa[k] == i) {
+							pa1.push(k);
+						}
+				}
+				var pale = pa1.length;
+				if(pale > 0)
+			{	
+				if(pale == 1) {
+					el.style.background = this.playercols[pa1[0]];
+				} else { 
+					el.style.background = "black";
+				}
+			} else {
+				el.style.background = "#ffffff";
+			}
+		}
 	},
 	Javapoli.money = function() {
 		for(var i = 0 ; i < this.players.length ; i++){
@@ -251,8 +306,17 @@ var	self = this,
 	Javapoli.getNumPlayers = function() {
 		return this.players.length;
 	},
-	Javapoli.rollDice = function() {		
-		return ( Math.floor(Math.random() * 6) + 1 ) + ( Math.floor(Math.random() * 6) + 1 );
+	Javapoli.rollDice = function() {
+		var r1 = Math.floor(Math.random() * 6) + 1;
+		var r2 = Math.floor(Math.random() * 6) + 1;
+		document.getElementById('diced1').innerHTML = r1;
+		document.getElementById('diced2').innerHTML = r2;
+		if(r1 == r2) {
+			is_double = true;
+		} else {
+			is_double = false;
+		}
+		return r1 + r2;
 	},
 	Javapoli.getGroupFactor = function(index) {
 		var l = this.fields.length,
@@ -272,6 +336,7 @@ var	self = this,
 		return this.fields[index].getGroupFactor();
 	},
 	Javapoli._streetFieldLanding = function() {
+		stepped = true; //
 		var index = this.players[this.currentPlayer].position;
 		var field = this.fields[index];
 		// pay rent ? +++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -309,7 +374,7 @@ var	self = this,
 		
 	},
 	Javapoli.checkIfMore = function() {
-		if(stepped) can_move = false;
+		if(stepped && !is_double) can_move = false;
 		this.updateHtml("<li>Do you want to take more actions?</li>");
 		currentCallback = "wantMore";
 	},
@@ -327,23 +392,22 @@ var	self = this,
 			currentCallback = "wantMore";
 		}		
 	},
-	Javapoli.wantMore = function(input) {
-		currentCallback = "parseCommand";
-		if(input == "n" || input == "no") {
-			stepped = false;
+	Javapoli.wantMore = function(input) {		
+		if(input == "n" || input == "no") {			
 			this.nextPlayer();
-			can_move = true;
+			currentCallback = "parseCommand";
 			this.updateHtml("<li>OK - " + this.players[this.currentPlayer].name + " is now playing his next step!'</li>");
-		} else if(this.is_allowed(input.split(":")[0])) {
-			if(stepped) can_move = false;
-			this.parseCommand(input);
 		} else {
-			if(stepped) can_move = false, cmd = input.split(":")[0];
-			if(cmd == "y" || cmd == "yes" ) {
+			if(stepped && !is_double) {
+				can_move = false;				
+			}
+			if(input == "y" || input == "yes" ) {
 				this.updateHtml("<li>OK, waiting for your next command!</li>");
+				currentCallback = "parseCommand";
 			}
 			 else {
-				this.updateHtml("<li>Hm - treating this "+cmd+" as a yes, waiting for your next command!</li>");
+				this.updateHtml("<li>Hm - treating this "+input+" as a yes, waiting for your next command!</li>");
+				currentCallback = "parseCommand";
 			 }
 		}
 	},
@@ -364,14 +428,14 @@ var	self = this,
 	Javapoli.restart=function(input){
 			location.reload()
 	},
-	Javapoli.nextPlayer = function() {
-		
+	Javapoli.nextPlayer = function() {	
 			if(this.currentPlayer < this.players.length - 1) {
 				this.currentPlayer ++;
 			} else {
 				this.currentPlayer = 0;
 			}
-		
+			stepped = false;
+			can_move = true;		
 	},
 	Javapoli.is_allowed = function(cmd) {
 		if(this.allowed_funcs.indexOf(cmd) !== -1) {
@@ -387,7 +451,6 @@ var	self = this,
 			if(x[1] !== undefined) {
 				var arguments = x[1].trim();
 				arguments = arguments.split(",");
-				console.log(arguments);
 			} else {
 				var arguments = null;
 			}
@@ -408,8 +471,7 @@ var	self = this,
 		// Important: importedStreets need type exactly like your class name, example see javapolistreet.js and streets.js
 		this.fields.push(new this.streetDefs[j[i].type](self, j[i]));
 	}
-	this.streetNum = numstr;
-	console.log("Have " + numstr + " fields.");
+	streetNum = numstr;
 		this.updateHtml( "<li>Welcome to Javapoli!<br/>If you get stuck type 'commands' without quotation marks to get instructions.</li><li>How many of you are there?</li>" );
 		document.getElementById("body").addEventListener("keypress", function(ev){
 			if (ev.keyCode === 13)
@@ -419,11 +481,46 @@ var	self = this,
 			ev.preventDefault();
 			this.focus();
 		});
+		var points=this.getStreetPoints(285,290,280,numstr);
+		var str = "";
+		for (var i = 0; i < points.length; i++) {
+			str +="<div id='d_"+i+"' class='point' title='"+this.fields[i].getName()+"' style='top: "+points[i].x+"px; left:"+points[i].y+"px;'></div></div>";
+		}
+		document.getElementById("gamefield").innerHTML = str;
+		document.getElementById("d_0").style.width = "24px";
+		document.getElementById("d_0").style.height = "24px";
+		document.getElementById("gamefield").onclick= this.checkField;
+		rotator = setInterval(Javapoli.rotateDots, 200);		
 		document.getElementById('cmd').focus();
-		//var s = new JavapoliStreet(this.Javapoli, "Teststreet", 50000, "_streetFieldLanding", null, 40000, {plain: 10000, a1: 50000, a2: 100000, a3: 500000, a4: 1000000, h: 5000000}, "plain", 4, 4);
+		
+	},
+	Javapoli.checkField = function(e) {
+		var e = e || window.event;
+		var target = e.target || e.srcElement;
+		if(target.className == "point") {
+			Javapoli.showStreetInfo(target.id);
+		}			
+	},
+	Javapoli.showStreetInfo = function(id) {
+		var el = document.getElementById('streetInfoBox');
+		if(isNaN(parseInt(id))) {
+			id = id.split("_");
+		id = parseInt(id[1]);
+		}	
+		el.innerHTML= Javapoli.fields[id].getName() 
+			+  "<br/>Players here: " + this.getPlayersOnField(id).join(",");
+		el.style.display = "block";
+	},
+	Javapoli.getStreetPoints = function(cX,cY,rad,num){
+		var pts=new Array();
+		for(var i=0;i<num;i++){
+			x=cX+rad*Math.sin(i*2*Math.PI/num);
+			y=cY+rad*Math.cos(i*2*Math.PI/num);
+			pts.push({'x':x,'y':y});
+		}
+		return pts;
 	},
 	Javapoli._parseInput = function(input) {
-		// mach was mit dem Input
 			if(input != "") {	
 			document.getElementById("cmd").value = "";
 			input = input.trim();
@@ -445,6 +542,35 @@ var	self = this,
 //maybe a setInterval / clearInterval can do the trick with less overhead - try it out!				
 			} 
 	},
+	Javapoli.rotateDots = function()
+	{	
+	
+		if(rotating) {			
+			if(actual_num < streetNum  && actual_num > 0) {
+				var actualminusone = actual_num - 1;
+				document.getElementById('d_'+ actualminusone).style.background="#ffffff";
+				document.getElementById('d_'+ actual_num).style.background = "blue";
+				actual_num ++;
+			} else {			
+				var n = streetNum - 1;
+				document.getElementById('d_'+ n).style.backgroundColor="#ffffff";	
+				document.getElementById('d_0').style.backgroundColor = "blue";
+				actual_num = 1;
+			}	
+		}	else {
+			clearInterval(rotator);
+			if(actual_num < streetNum && actual_num > 0) {
+				var actualminusone = actual_num - 1;
+				document.getElementById('d_'+ actualminusone).style.background="#ffffff";
+			} else {
+				var n = streetNum - 1;
+				document.getElementById('d_'+ n).style.backgroundColor="#ffffff";	
+				document.getElementById('d_0').style.backgroundColor = "#ffffff";
+				actual_num = 1;
+			}
+		}	
+	
+	};
 	Javapoli.updateHtml = function(text) {
 		this.html += text;
 		var el = document.getElementById("gametext");
