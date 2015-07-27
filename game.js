@@ -122,7 +122,6 @@ var	self = this,
 		if ( street_validated && this.fields[street].getPlayer() != this.currentPlayer ) {
 			errors.push("You don't own this field.");
 		}
-		
 		if(isNaN(parseInt(buyer))) {
 			buyer = this.getPlayerIndexFromName(buyer);
 			if(buyer === false) errors.push("The buyer does not exist, please check your input!");
@@ -133,6 +132,9 @@ var	self = this,
 				buyer_validated = false;
 				errors.push("The buyer index you typed does not exists.");
 			}
+		}
+		if(!this.players[buyer].active) {
+			errors.push("The buyer is not an active player anymore.");
 		}
 		if ( buyer_validated && this.players[buyer] == this.players[this.currentPlayer] ) {
 			errors.push("You can't sell to your own.");
@@ -147,7 +149,7 @@ var	self = this,
 				this.players[buyer].money -= price;
 				this.players[this.currentPlayer].money += price;
 				this.fields[street].setPlayer(buyer);
-				if (this.checkMoney(buyer)) {
+				if (this.checkMoney(buyer, price)) {
 					this.updateHtml("<li>Sold! "+this.players[buyer].name+" has €"+this.players[buyer].money+" left"
 					+" and "+this.players[this.currentPlayer].name+" has €"+this.players[this.currentPlayer].money+" left.</li>");
 					this.checkIfMore();
@@ -223,7 +225,7 @@ var	self = this,
 		}
 	},
 	Javapoli.addPlayer = function() {
-		this.players.push({ name: "default", money: this.dmoney, position: 0 });
+		this.players.push({ name: "default", money: this.dmoney, position: 0, active: true });
 	},
 	Javapoli.getPlayerPositions = function() {
 		var pa = [];
@@ -319,6 +321,9 @@ var	self = this,
 		return r1 + r2;
 	},
 	Javapoli.getGroupFactor = function(index) {
+		//if this function does not exist (in Card Fields for example)
+		if(!this.fields[index].getGroup) return 1;
+		console.log("checking grouped property");
 		var l = this.fields.length,
 			group = this.fields[index].getGroup(),
 			is_grouped = true,
@@ -345,13 +350,18 @@ var	self = this,
 				if (field.getStatus() != "credit") {
 					var gFactor = this.getGroupFactor(index);
 					var rent =  field.getRent();
-					this.updateHtml("<li>"+this.players[this.currentPlayer].name +" pays "+this.players[field.player].name +" "+ rent +" €</li>");
-					if(gFactor > 1) this.updateHtml("<li>"+this.players[field.player].name+" has all streets of this group, so the rent was raised by the factor "+gFactor+"</li>");
-					this.currentPlayer.money -= rent;
-					this.players[field.player].money += rent;
-					if(this.checkMoney()) {
+					if(this.players[field.getPlayer()].active) {
+						this.updateHtml("<li>"+this.players[this.currentPlayer].name +" pays "+this.players[field.player].name +" "+ rent +" €</li>");
+						if(gFactor > 1) this.updateHtml("<li>"+this.players[field.player].name+" has all streets of this group, so the rent was raised by the factor "+gFactor+"</li>");
+						this.currentPlayer.money -= rent;
+						this.players[field.player].money += rent;
+						if(this.checkMoney(this.currentPlayer, rent)) {
+							this.checkIfMore();
+						}
+					} else {
+						this.updateHtml("<li>The player the street belongs to is already out. No fees apply.</li>");
 						this.checkIfMore();
-					}
+					}					
 				} else {
 					this.updateHtml("<li>The field is currently used for a credit. No fees apply for landing here.</li>");
 					this.checkIfMore();
@@ -363,9 +373,9 @@ var	self = this,
 		// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		// buy ? +++++++++++++++++++++++++++++++++++++++++++++++++
 		else{
-			if(index > 0) {
+			if(index > 0) {			
 				currentCallback = "buyStreet";
-				this.updateHtml("<li> would you like to buy "+field.getName()+" for "+field.getPrice()+" € ?</li>");
+				this.updateHtml("<li> would you like to buy "+field.getName()+" for "+field.getPrice()+" € ?</li>");			
 			} else {
 				this.checkIfMore();
 			}		
@@ -379,15 +389,15 @@ var	self = this,
 		currentCallback = "wantMore";
 	},
 	Javapoli.buyStreet=function(input){
-		if(input == "y" || input == "yes"){
-			var field = this.fields[ this.players[ this.currentPlayer ].position ];
+		var field = this.fields[ this.players[ this.currentPlayer ].position ];
+		if(input == "y" || input == "yes"){		
 			this.players[this.currentPlayer].money -= field.getPrice();
 			field.setPlayer( this.currentPlayer );
 			this.updateHtml("<li>Purchased! You have "+this.players[this.currentPlayer].money+" € left </li>");
 		} else {
 			this.updateHtml("<li>Not purchased!</li>");
 		}
-		if (this.checkMoney()) {
+		if (this.checkMoney(this.currentPlayer, field.getPrice())) {
 			this.checkIfMore();
 			currentCallback = "wantMore";
 		}		
@@ -411,19 +421,101 @@ var	self = this,
 			 }
 		}
 	},
+	Javapoli.enoughPlayers = function() {
+		var l = this.players.length, activePlayers = 0;
+		for(var i = 0; i < l; i++) {
+			if(this.players[i].active) {
+				activePlayers ++;
+			}
+		}
+		if(activePlayers > 1) {
+			return true;
+		} else {
+			return false;
+		}
+	},
 	Javapoli.checkMoney = function() {
 	if(arguments.length) {
 		index = arguments[0];
 	} else {
 		index = this.currentPlayer;
-	}	
+	}
+	var has_enough = true;
 		if(this.players[index].money < 0) {
-			this.updateHtml("<li>"+this.players[index].name+" lost!</li>");			
-			currentCallback="restart";
-			this.updateHtml("<li> press any key to restart the this.Javapoli </li>");
+			var can_do_credit = this.autoCredit(index);
+			if(can_do_credit) { // has options left to get money from bank for his streets
+				// can_do_credit updates html with streets to be credited etc.
+				this.updateHtml("Saved from loosing! You had enough credit left on your streets.");
+			} else { // has no options left to get money
+				this.updateHtml("<li>"+this.players[index].name+" is out...!</li>");
+				this.players[index].active = false;
+				if(this.enoughPlayers()) {
+					has_enough = true; // game continues
+					this.nextPlayer(); // we need the next Player now
+				} else {
+					currentCallback="restart";
+				this.updateHtml("<li> press any key to restart the this.Javapoli </li>");
+				has_enough = false;
+				}			
+			}			
+		}
+		return has_enough;
+	},
+	Javapoli.getPlayerStreets = function(index) {
+		var l = this.fields.length, retAr = [];
+		for(var i = 0; i < l; i++) {
+			if(this.fields[i].getPlayer() == index) 
+				retAr.push(i);
+		}
+		return retAr;
+	},
+	Javapoli.autoCredit = function(index) {
+		// how much money is needed to be > 0 ?
+		// credit streets simply looping over them... maybe later some smarter logic, like order by credit ASC to "cost" less
+		var ownStreets = this.getPlayerStreets(index), l = ownStreets.length, i = 0;
+		while(this.players[index].money < 0 && i < l) {
+			var amount = this.fields[ownStreets[i]].getCredit();
+			this.players[index].money += amount;
+			this.fields[ownStreets[i]].setStatus("credit");
+			this.updateHtml("Auto-credited amount of € " + amount + " from " +this.fields[ownStreets[i]].getName() + " to save " + this.players[index].name + " from loosing.");
+			i++;
+		}
+		if(this.players[i].money < 0) {
 			return false;
 		}
 		return true;
+	},
+	Javapoli.chooseRandomComAction = function() {
+		var callback = this.fields[this.players[this.currentPlayer].position].getRandomCallback();
+		this[callback]();
+	},
+	Javapoli.payTaxOnHotels = function() {
+		var ownStr = this.getPlayerStreets(this.currentPlayer), l = ownStr.length, num_hotels = 0;
+		for(var i = 0; i < l; i++) {
+			if(this.fields[ownStr[i]].getStatus() == "h") {
+				num_hotels ++;
+			}
+		}
+		var to_pay = num_hotels * 4000;
+		this.updateHtml("You have " + num_hotels + " hotels. You pay: " + to_pay + " €.");
+		this.players[this.currentPlayer].money -= to_pay;
+		if(this.checkMoney(this.currentPlayer)) {
+			this.checkIfMore();
+		}
+	},
+	Javapoli.partyRealEstate = function() {
+		console.log("In partyRealEstate");
+		var ownStr = this.getPlayerStreets(this.currentPlayer), l = ownStr.length;
+		if(l > 4) {
+			this.updateHtml("You have to pay 50000 € as you own " + l + " hotels.");
+			this.players[this.currentPlayer].money -= 50000;
+			if(this.checkMoney(this.currentPlayer)) {
+				this.checkIfMore();
+			}
+		} else {
+			this.updateHtml("You own " + l + "hotels. You do not pay.");
+			this.checkIfMore();
+		}		
 	},
 	Javapoli.restart=function(input){
 			location.reload()
@@ -433,6 +525,10 @@ var	self = this,
 				this.currentPlayer ++;
 			} else {
 				this.currentPlayer = 0;
+			}
+			if(!this.players[this.currentPlayer].active) {
+				this.updateHtml("Skipping Player "+this.players[currentPlayer].name+" who lost already.");
+				this.nextPlayer();
 			}
 			stepped = false;
 			can_move = true;		
@@ -470,6 +566,10 @@ var	self = this,
 		// and push into fields array of the game. 
 		// Important: importedStreets need type exactly like your class name, example see javapolistreet.js and streets.js
 		this.fields.push(new this.streetDefs[j[i].type](self, j[i]));
+	}
+	var c = this.importedComFields;
+	for(var i = 0; i< c.length; i++) {
+		this.fields.push(new this.streetDefs[c[i].type](self, c[i]));
 	}
 	streetNum = numstr;
 		this.updateHtml( "<li>Welcome to Javapoli!<br/>If you get stuck type 'commands' without quotation marks to get instructions.</li><li>How many of you are there?</li>" );
