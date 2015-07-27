@@ -27,5 +27,11 @@
 	Javapoli.importedStreets.push({type: "JavapoliStreet", name: "Oat Woods", price: 4000, callback: "_streetFieldLanding", player: null, credit: 8000, rent: {plain: 10000, a1: 50000, a2: 100000, a3: 500000, a4: 1000000, h: 5000000}, status: "plain", group: 0, group_factor: 2});
 	Javapoli.importedStreets.push({type: "JavapoliStreet", name: "Rocky Coast", price: 4000, callback: "_streetFieldLanding", player: null, credit: 8000, rent: {plain: 10000, a1: 50000, a2: 100000, a3: 500000, a4: 1000000, h: 5000000}, status: "plain", group: 9, group_factor: 2});
 	
+	
+	Javapoli.importedComFields = Javapoli.importedComFields || [];
+	
+	Javapoli.importedStreets.push({ type: "JavapoliCommunityCard", name: "Tax Report on Hotels", text: "Tax - you have to pay 4000 Euros for each of your hotels.", callback: "chooseRandomComAction", player: null, status: null, callbacks: ["partyRealEstate", "payTaxOnHotels"]});
+	
+	
 return Javapoli;
 })(Javapoli);
