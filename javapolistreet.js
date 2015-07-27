@@ -134,7 +134,58 @@ JavapoliStreet.prototype.getGroupFactor = function() {
 	return this.group_factor;
 };
 Javapoli.streetDefs.JavapoliStreet = JavapoliStreet;
+
+var JavapoliCommunityCard = function(game, obj) {
+	this.game = game; 
+	JavapoliCommunityCard.prototype.setName.call(this, obj.name);
+	JavapoliCommunityCard.prototype.setText.call(this, obj.text);
+	JavapoliCommunityCard.prototype.setCallback.call(this, obj.callback);
+	JavapoliCommunityCard.prototype.setPlayer.call(this, obj.player);
+	JavapoliCommunityCard.prototype.setStatus.call(this, obj.status);
+	JavapoliCommunityCard.prototype.setCallbacks.call(this, obj.callbacks);
+};
+JavapoliCommunityCard.prototype.setCallbacks = function(callbacks) {
+	this.callbacks = callbacks;
+};
+JavapoliCommunityCard.prototype.getRandomCallback = function() {
+	var l = this.callbacks.length;
+	var rnd = Math.floor(Math.random() * l);
+	console.log(this.callbacks[rnd]);
+	return this.callbacks[rnd];
+};
+JavapoliCommunityCard.prototype.setName = function(name) {
+	this.name = name;
+};
+JavapoliCommunityCard.prototype.getName = function() {
+	return this.name;
+};
+JavapoliCommunityCard.prototype.setText = function(text) {
+	this.text = text;
+};
+JavapoliCommunityCard.prototype.getText = function() {
+	return this.text;
+};
+JavapoliCommunityCard.prototype.setCallback = function(callback) {
+	this.callback = callback; // OK checks later as with all these..
+};
+JavapoliCommunityCard.prototype.getCallback = function() {
+	return this.callback;
+};
+JavapoliCommunityCard.prototype.setPlayer = function(player) {
+	player = player || null;
+	this.player = player;
+};
+JavapoliCommunityCard.prototype.getPlayer = function() {
+	return this.player;
+};
+JavapoliCommunityCard.prototype.setStatus = function() {
+	this.status = status;
+};
+JavapoliCommunityCard.prototype.getStatus = function() {
+	return this.status;
+};
+
+Javapoli.streetDefs.JavapoliCommunityCard = JavapoliCommunityCard;
+
 return Javapoli;
 })(Javapoli);
-
-
